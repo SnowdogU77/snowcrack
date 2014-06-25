@@ -7,4 +7,4 @@ HASH2%PLAINTEXT
 Dictionary files must be alphabetically sorted. This can be quickly achieved using Python's built in sort() function.
 
 
-DISCLAIMER: The author of Snowcrack is not liable for any damages, physical or digital, caused by this tool. This script is to be used for testing and password recovery purposes only. Use of this program to grant unauthorized access to any system is in no way endorsed by the author, and is a federal crime.
+DISCLAIMER: The author of Snowcrack is not liable for any damages, physical or digital, caused by this tool. This tool is to be used for testing and password recovery purposes only. Use of this tool to grant unauthorized access to any system is in no way endorsed by the author, and is a federal crime.
