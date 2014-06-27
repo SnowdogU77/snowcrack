@@ -15,13 +15,9 @@ def main():
         else:
             print("Invalid hash!\n")
             
-    file = input("Dictionary file (blank defaults to dictionary.sgn): ")
-
-    if file == "":
-        file = "dictionary.sgn"
+    file = input("Dictionary file: ")
         
     print("\nSearching...")
-    
     table = open(file, 'r')
     lines = table.readlines()
     table.close()
