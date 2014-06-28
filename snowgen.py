@@ -100,11 +100,12 @@ def gentable(fname, charlist, minlength, maxlength):
             # that include the % character
             print(str(binascii.hexlify(phash))[2:-1].upper() + "%" + password, file=file)
             count += 1
-            
+
+    fn = file.name
     file.close()
     
     if count < 7454000:
-        sorttable(fname+".sgn")
+        sorttable(fn)
         
     print("Runtime: {} with {} possible".format(time.time()-x, count))
     
