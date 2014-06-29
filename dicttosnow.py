@@ -10,10 +10,10 @@ import binascii
 
 def toSnow(outfile, infile=None, directory=sys.path[0]):
     """
-    Generates a rainbow table from UTF-8 dictionary file(s). Sourced from all
+    Generates a dictionary from UTF-8 dictionary file(s). Sourced from all
     files in working directory by default.
     ---
-    outfile: Name given to rainbow table, defaults to 'dictionary.sgn'.
+    outfile: Name given to dictionary, defaults to 'dictionary.sgn'.
     directory: Directory containing dictionaries, defaults to working directory.
     infile: Source from a single dictionary, not used by default.
     """

@@ -106,7 +106,7 @@ def main():
             crackMulti(inhash, fname, directory)
             return
         
-    crackSingle(inhash, fname, directory)
+    crackSingle(inhash, file)
         
 
 main()
