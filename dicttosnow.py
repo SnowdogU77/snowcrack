@@ -6,9 +6,10 @@ import os
 import sys
 import hashlib
 import binascii
+import time
 
 
-def toSnow(outfile, infile=None, directory=sys.path[0]):
+def toSnow(infile=None, directory=sys.path[0]):
     """
     Generates a dictionary from UTF-8 dictionary file(s). Sourced from all
     files in working directory by default.
@@ -19,7 +20,7 @@ def toSnow(outfile, infile=None, directory=sys.path[0]):
     """
     
     print("Generating table...\n")
-    out = open(outfile, 'w')
+    out = []
     
     if infile != None:
         files = infile
@@ -36,38 +37,64 @@ def toSnow(outfile, infile=None, directory=sys.path[0]):
             phash = hashlib.new('md4', pw.encode('utf-16le')).digest()
 
             # Print the password to specfied file in this format: password   hash
-            print(str(binascii.hexlify(phash))[2:-1].upper() + "%" + pw, file=out)
+            out.append(str(binascii.hexlify(phash))[2:-1].upper() + "÷" + pw)
 
         print(file, "added...")
         dic.close()
-        
-    out.close()
+    
+    return out
 
-def noDupesSort(infile):
+
+def noDupeSort(info, outfile = 'new dictionary.sgn'):
     # Removes duplicates and sorts file
-    file = open(infile)
     
     # Sketchy but fast duplicate removal
-    lines = set(file.readlines())
-    print("\nDuplicates removed...\nSorting...")
+    lines = set(info)
     
+    print("\nDuplicates removed...\nSorting...")
     lines = [l.rstrip() for l in list(lines)]
-    file.close()
     lines.sort()
     
     print("Sorted...\nWriting file...")
-    file = open(infile, 'w')
-        
-    for line in lines:
-        print(line, file=file)
+    file = open(outfile, 'w')
 
+    prev = ''
+    curh = ''
+    curp = ''
+    
+    for line in lines:
+        try:
+            h,p = line.split('÷')
+            
+            if curh == '':
+                curh += h[:4]+'|'+h[4:]
+                curp += p
+                
+            elif line[:4] == prev[:4]:
+                curh += '|'+h[4:]
+                curp += '¬'+p
+                
+            else:
+                print(curh+'÷'+curp, file=file)
+                curh, curp = '',''
+
+            prev = line
+            
+        except ValueError:
+            pass
+        
     print('Done.\n')
     file.close()
 
+
 def main():
-    infile = input("Directory: ")
-    toSnow(infile)
-    noDupeSort(infile)
+    direct = input("Directory: ")
+    x = time.time()
+    if not direct[-1] == "/" or "\\":
+        direct += "/"
+    inf = toSnow(directory=direct)
+    noDupeSort(inf)
+    print(round(time.time()-x, 2))
 
     
 if __name__ == "__main__":
