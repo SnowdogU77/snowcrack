@@ -4,8 +4,9 @@
 
 from bisect import bisect_left
 import os
-import time
 import sys
+import time
+import datetime
 
 ######
 def crackMulti(inhash, file, directory):
@@ -19,7 +20,8 @@ def crackMulti(inhash, file, directory):
     t = time.time()
     found = False
 
-    files = [file] + [directory+f for f in next(os.walk(directory))[2] if f.startswith(file[:-4]+" ~")]
+    files = [directory+file] + [directory+f for f in next(os.walk(directory))[2]\
+             if (f.startswith(file[:-4])and f[-5:] == ".psgn")]
     
     for f in files:
         table = open(f, 'r')
@@ -40,8 +42,8 @@ def crackMulti(inhash, file, directory):
             pas = passes[m]
 
             if not pos == 0:
-                print("\nSuccess! Password is:", pas)
-                print("Runtime: {}".format(_toTime(time.time()-t)))
+                print("Success! Password is:", pas)
+                print("\nRuntime: {}".format(_toTime(time.time()-t)))
                 
                 table.close()
                 found = True
@@ -59,7 +61,7 @@ def crackMulti(inhash, file, directory):
     print("")
 
 ######
-def crackSingle(inhash,file):
+def crackSingle(inhash,file,directory):
     """crackSingle manages cracking using a single file.
     -
     inhash: hash to crack
@@ -67,7 +69,7 @@ def crackSingle(inhash,file):
         
     print("\nSearching...")
     t = time.time()
-    table = open(file, 'r')
+    table = open(directory+file, 'r')
     lines = table.readlines()
     heads = [l[:4] for l in lines]
     
@@ -86,23 +88,24 @@ def crackSingle(inhash,file):
         pas = passes[m]
         
     except ValueError:
+        print("Password not found!")
         return
         
     print("Success! Password is:", pas)
-    print("Runtime: {}".format(_toTime(time.time()-t)))
+    print("\nRuntime: {}".format(_toTime(time.time()-t)))
 
 ######
 def _toTime(raw):
     # Converts time in seconds to appropriate format
-    
-    t = round(raw,2)
+
+    t = raw
     
     if t < 60:
-        return str(t)+" seconds"
+        return str(round(t,2))+" seconds"
     elif t < 3600:
-        return str(t/60)+" minutes"
+        return str(round(t/60,2))+" minutes"
     else:
-        return str(t/120)+ "hours"
+        return str(round(t/120,2))+ " hours"
 
 ######
 def _digestFile(file):
@@ -120,21 +123,24 @@ def _digestFile(file):
     if di != None:
         directory = file[:di]
         
-    fname = file[di+1:-4]
-    end = file[-4:]
+    fname = file[di:-4]
+    end = ".sgn"
     rfname = ""
-
-    if "alph" in fname:
+    norm = False
+    
+    if ("alph" in fname or "Alph" in fname):
         rfname += "Alph"
-    if "caps" in fname:
+    if ("caps" in fname or "Caps" in fname):
         rfname += "Caps"
-    if "nums" in fname:
+    if ("nums" in fname or "Nums" in fname):
         rfname += "Nums"
-    if "chal" in fname:
+    if ("chal" in fname or "Chal" in fname):
         rfname += "Chal"
     if rfname != "":
         rfname += " "+fname[len(rfname)+1:]+end
         fname = rfname
+    else:
+        fname += end
         
     return fname, directory
 
@@ -167,7 +173,7 @@ def main():
             crackMulti(inhash, fname, directory)
             return
         
-    crackSingle(inhash, file)
+    crackSingle(inhash, fname, directory)
 
     input("\nPress enter to exit...")
     print("")
