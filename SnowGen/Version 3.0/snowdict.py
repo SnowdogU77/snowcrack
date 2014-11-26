@@ -1,61 +1,18 @@
 import hashlib
 import binascii
 
-class SnowDict():
-    def __init__(self, hashtype, fromdts=False):
+class SnowDict:
+    
+    def __init__(self, hashtype, fromDictToSnow=False):
         """A SnowDict is a dictionary of passwords and hashes for use
         with the SnowCrack suite."""
         
         self._data = []
         self._hashtype = hashtype
         self._isSorted = False
-        self._fromdts = fromdts
+        self._fromdts = fromDictToSnow
         
-    #####
-    def _digestFileName(self, filename):
-    # Converts file input into proper format to stop case sensitivity
-
-        di = None
-
-        if filename.count("\\") != 0:
-            di = filename.rfind("\\")+1
-        elif filename.count("/") != 0:
-            di = filename.rfind("/")+1
-        else:
-            directory = sys.path[0]+"\\"
-
-        if di != None:
-            directory = filename[:di]
-            
-        fname = filename[di:-4]
-        end = ".sgn"
-        rfname = ""
-        norm = False
-        
-        if ("alph" in fname or "Alph" in fname):
-            rfname += "Alph"
-        if ("caps" in fname or "Caps" in fname):
-            rfname += "Caps"
-        if ("nums" in fname or "Nums" in fname):
-            rfname += "Nums"
-        if ("chal" in fname or "Chal" in fname):
-            rfname += "Chal"
-        if rfname != "":
-            rfname += " "+fname[len(rfname)+1:]+end
-            fname = rfname
-        else:
-            fname += end
-            
-        return directory+fname
-
-    ####
-    def _isFromDict(self):
-        if "fromdts" in self._data[0]:
-            return True
-        else:
-            return False
-        
-    #####
+#-------------------
     def sort(self):
         """Sort sorts the dictionary into proper SnowCrack format.
         Once sorted, additions cannot be made to it, nor can it
@@ -64,55 +21,55 @@ class SnowDict():
         if len(self._data) == 0:
             raise ValueError("Dictionary is empty")
 
-        if not self._isSorted:
-            # Sketchy but fast duplicate removal
-            if self._isFromDict():
-                lines = set(self._data)
-                lines = [l.rstrip() for l in list(lines)]
-            else:
-                lines = self._data
-            lines.sort()
-
-            data = []
-            prev = []
-            curh = ''
-            curp = ''
-            end = lines[-1]
-            
-            for line in lines:
-                try:
-                    h,p = line.split('÷')
-                    
-                    if curh == '':
-                        curh += h[:4]+'|'+h[4:]
-                        curp += p
-                        
-                    elif h[:4] == prev[0][:4]:
-                        curh += '|'+h[4:]
-                        curp += '¬'+p
-                        
-                    else:
-                        data.append(curh+'÷'+curp)
-                        curh, curp = '',''
-                        curh += h[:4]+'|'+h[4:]
-                        curp += p
-                        
-                    if line == end:
-                        data.append(curh+'÷'+curp)
-                        
-                    prev = [h,p]
-                    
-                except ValueError:
-                    pass
-                
-            self._data = data
-            self._isSorted = True
-
-        else:
+        if self._isSorted:
             raise ValueError("Dictionary is already sorted")
         
-    ####
-    def addPassword(self, password):
+        # Sketchy but fast duplicate removal
+        if self._isFromDict():
+            lines = set(self._data)
+            lines = [l.rstrip() for l in list(lines)]
+        else:
+            lines = self._data
+            
+        lines.sort()
+
+        data = []
+        prev = []
+        curh = ''
+        curp = ''
+        end = lines[-1]
+        
+        for line in lines:
+            try:
+                h,p = line.split('÷')
+                
+                if curh == '':
+                    curh += h[:4]+'|'+h[4:]
+                    curp += p
+                    
+                elif h[:4] == prev[0][:4]:
+                    curh += '|'+h[4:]
+                    curp += '¬'+p
+                    
+                else:
+                    data.append(curh+'÷'+curp)
+                    curh, curp = '',''
+                    curh += h[:4]+'|'+h[4:]
+                    curp += p
+                    
+                if line == end:
+                    data.append(curh+'÷'+curp)
+                    
+                prev = [h,p]
+                
+            except ValueError:
+                pass
+            
+        self._data = data
+        self._isSorted = True
+        
+#-------------------
+    def addPassword(self, password, compress=False):
         hashtype = self._hashtype
         
         if not self._isSorted:
@@ -169,7 +126,7 @@ class SnowDict():
                     
             # If the hash isn't ntlm length, store as md5 to decrease file size
             # and limit runtime memory usage
-            if not hashtype in ["ntlm", "md4", "md5"]:
+            if compress and not hashtype in ["ntlm", "md4", "md5"]:
                 phash = str(binascii.hexlify(phash))[2:-1]
                 phash = hashlib.md5(phash.encode("ascii")).digest()
 
@@ -179,16 +136,64 @@ class SnowDict():
         else:
             raise ValueError("Dictionary is already sorted")
 
-    ####
+#-------------------
     def writeToFile(self, filename):
-        if self._sorted:
-            fname = self._digestFileName(filename)
-            file = open(fname, 'w')
-            if fromdts:
-                print("fromdts", file=file)
-            for item in self._data:
-                print(item, file=file)
-            file.close()
-        else:
+        if not self._isSorted:
             raise ValueError("Cannot write unsorted table")
+        
+        fname = self._digestFileName(filename)
+        
+        with open(fname, 'w') as f:
+        
+            if self._fromdts:
+                print("fromdts", file=f)
+                
+            for item in self._data:
+                print(item, file=f)
+
+#-------------------
+    def _digestFileName(self, filename):
+    #Converts file input into proper format to stop case sensitivity
+
+        di = None
+
+        if filename.count("\\") != 0:
+            di = filename.rfind("\\")+1
+        elif filename.count("/") != 0:
+            di = filename.rfind("/")+1
+        else:
+            directory = sys.path[0]+"\\"
+
+        if di != None:
+            directory = filename[:di]
+            
+        fname = filename[di:-4]
+        end = ".sgn"
+        rfname = ""
+        norm = False
+        
+        if ("alph" in fname or "Alph" in fname):
+            rfname += "Alph"
+        if ("caps" in fname or "Caps" in fname):
+            rfname += "Caps"
+        if ("nums" in fname or "Nums" in fname):
+            rfname += "Nums"
+        if ("chal" in fname or "Chal" in fname):
+            rfname += "Chal"
+        if rfname != "":
+            rfname += " "+fname[len(rfname)+1:]+end
+            fname = rfname
+        else:
+            fname += end
+            
+        return directory+fname
+
+#-------------------
+    def _isFromDict(self):
+        if "fromdts" in self._data[0]:
+            return True
+        else:
+            return False
+
+            
             

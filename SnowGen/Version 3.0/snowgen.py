@@ -86,10 +86,9 @@ def _getchars(method, directory):
     return name, hashtype, charlist, minlength, maxlength
 
 ######
-def gentable(fname, hashtype, charlist, minlength, maxlength):
+def gentable(fname, hashtype, charlist, minlength, maxlength, compress=False):
     """Generates an NTLM rainbow table with a given charlist, and saves to a file."""
-
-    fn = fname+".sgn"
+    
     table = SnowDict(hashtype)
     x = time.time()
     sortlen = 7454000
@@ -120,7 +119,7 @@ def gentable(fname, hashtype, charlist, minlength, maxlength):
         
     if count < sortlen:
         table.sort()
-        table.writeToFile(fn)
+        table.writeToFile(fname)
     
     print("Runtime: {} with {} possible".format(_toTime(time.time()-x), count))
 
@@ -151,9 +150,12 @@ def main():
             else:
                 break
 
+        compress = {'y':True, 'n':False}[input("""Use compression? This will take far longer, but the
+                         files will be much smaller for longer hashtypes: """)[0].lower()]
+
         n,ht,ch,mi,ma = _getchars(method,direct)
         print("Generating table...\n")
-        gentable(n,ht,ch,mi,ma)
+        gentable(n,ht,ch,mi,ma,compress)
         print("\nGeneration complete.\n")
         
     except (KeyboardInterrupt, EOFError):

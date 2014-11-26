@@ -92,10 +92,12 @@ def main():
         except ValueError:
             print("Invalid input!")
 
-    x = time.time()    
+    t = time.time()
+    
     fname = "{}{} dictionary.sgn".format(outdir,hashtype)
     toSnow(hashtype, fname, directory=indir)
-    print("Operation completed in {}".format(_toTime(time.time()-x)))
+    
+    print("Operation completed in {}".format(_toTime(time.time()-t)))
 
     
 if __name__ == "__main__":
