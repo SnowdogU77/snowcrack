@@ -18,12 +18,12 @@ def _getchars(method, directory):
     alpha = "abcdefghijklmnopqrstuvwxyz"
     upper = alpha.upper()
     numbers = "1234567890"
-    challenge = "~`!@#$%^&*()_-+=[]{}|:;'<,>.?/ "
+    challenge = "~`!@#$%^&*()_-+=[]{}|:;'<,>.?/\\ "
     ###
     
     hlist = ["ntlm", "md4", "md5", "whirlpool", "sha1", "sha224", "sha256", "sha384", "sha512"]
     charlist = ""
-    name = directory
+    fname = directory
     
     # Charlist generation wizard
     while True:
@@ -35,7 +35,7 @@ def _getchars(method, directory):
                 print("Invalid input!")
             else:
                 hashtype = hlist[ht]
-                name += hashtype + " "
+                fname += hashtype + " "
                 break
             
         except ValueError:
@@ -43,32 +43,33 @@ def _getchars(method, directory):
     
     if method == "w":
         print("\nReply y/n")
+        
         while True:
             try:
                 if input("Lowercase letters? ")[0].lower() == "y":
                     charlist += alpha
-                    name += "Alph"
-          
+                    fname += "Alph "
+                    
                 if input("Uppercase letters? ")[0].lower() == "y":
                     charlist += upper
-                    name += "Caps"
+                    fname += "Caps "
                     
                 if input("Numbers? ")[0].lower() == "y":
                     charlist += numbers
-                    name += "Nums"
+                    fname += "Nums "
                     
                 if input("Symbols? ")[0].lower() == "y":
                     charlist += challenge
-                    name += "Chal"
+                    fname += "Chal "
                 break
             
             except IndexError:
                 print("Incorrect input.\n")
-                name = directory
-                
-    # Customized charlist
-    if method == "c":
-        name = input("Base file name: ")
+                pass
+
+    # Customized charlist       
+    elif method == "c":
+        fname = input("File name: ")
         charlist = input("Insert characters:\n")
         
     while True:
@@ -80,33 +81,50 @@ def _getchars(method, directory):
             print("Incorrect input.")
             
 
-    name += " {}-{}".format(minlength,maxlength-1)
+    fname += "{}-{}".format(minlength,maxlength-1)
     print("")
+
+    compress = False
     
-    return name, hashtype, charlist, minlength, maxlength
+    if hashtype in ["whirlpool", "sha1", "sha224", "sha256", "sha384", "sha512"]:
+        
+        compress = input("\nUse compression? This will take far longer, but the files will be much smaller for longer hashtypes: ")[0].lower()
+        if compress == "y":
+            compress = True
+
+    return fname, hashtype, charlist, minlength, maxlength, compress
 
 ######
-def gentable(fname, hashtype, charlist, minlength, maxlength, compress=False):
+def gentable(fname, hashtype, charlist, minlength, maxlength, useCompression):
     """Generates an NTLM rainbow table with a given charlist, and saves to a file."""
     
-    table = SnowDict(hashtype)
+    table = SnowDict(hashtype, compress=useCompression)
     x = time.time()
-    sortlen = 7454000
     count = 0
-    
+
+    # Set the number of hashes to be stored per file. Limits to approximately 250MB files
+    if (hashtype in ["whirlpool", "sha1", "sha224", "sha256", "sha384", "sha512"] and useCompression == False):
+        sortlen = 1863500
+    else:
+        sortlen = 7454000
+                    
     # Iterates through possible lengths
     for passlen in range(minlength, maxlength):
 
         # Iterates through all possible passwords within length
         for comb in itertools.product(charlist, repeat=passlen):
 
-            # Limit to ~250MB per file, also limits runtime memory usage
-            if (count%sortlen == 0 and count != 0):
+            # Handle file size / memory management
+            if count%sortlen == 0 and count != 0:
                 end = str(count//sortlen)
-                fn = fname+" ~"+end+".psgn"
+                if end == 1:
+                    fn = fname+".sdct"
+                else:
+                    fn = fname+" ~"+end+".psdct"
+                    
                 table.sort()
                 table.writeToFile(fn)
-                table = SnowDict(hashtype)
+                table.clearTable()
             
             password = ''.join(comb)
             
@@ -119,6 +137,7 @@ def gentable(fname, hashtype, charlist, minlength, maxlength, compress=False):
         
     if count < sortlen:
         table.sort()
+        fname += ".sdct"
         table.writeToFile(fname)
     
     print("Runtime: {} with {} possible".format(_toTime(time.time()-x), count))
@@ -127,13 +146,14 @@ def gentable(fname, hashtype, charlist, minlength, maxlength, compress=False):
 def _toTime(raw):
     # Converts time to a useful format
 
-    t = round(raw,2)
-    if t < 60:
-        return str(t)+" seconds"
-    elif t < 3600:
-        return str(t/60)+" minutes"
+    
+    
+    if raw < 60:
+        return str(round(raw, 2))+" seconds"
+    elif raw < 3600:
+        return str(round(raw/60, 2))+" minutes"
     else:
-        return str(t/120)+ "hours"
+        return str(round((raw/60)/60, 2))+ " hours"
 
 ######        
 def main():
@@ -141,6 +161,9 @@ def main():
 
     try:
         direct = input("Save directory: ")
+
+        if not direct[-1] in ["/","\\"]:
+            direct += "/"
         
         while True:
             method = input("\nCharlist 'wizard' or 'custom?' ")[0].lower()
@@ -149,12 +172,10 @@ def main():
                 print("Incorrect input.")
             else:
                 break
-
-        compress = {'y':True, 'n':False}[input("""Use compression? This will take far longer, but the
-                         files will be much smaller for longer hashtypes: """)[0].lower()]
-
-        n,ht,ch,mi,ma = _getchars(method,direct)
-        print("Generating table...\n")
+            
+        n,ht,ch,mi,ma,compress = _getchars(method,direct)
+        
+        print("\nGenerating table...\n")
         gentable(n,ht,ch,mi,ma,compress)
         print("\nGeneration complete.\n")
         

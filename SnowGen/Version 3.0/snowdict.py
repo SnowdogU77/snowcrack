@@ -3,12 +3,13 @@ import binascii
 
 class SnowDict:
     
-    def __init__(self, hashtype, fromDictToSnow=False):
+    def __init__(self, hashtype, compress, fromDictToSnow=False):
         """A SnowDict is a dictionary of passwords and hashes for use
         with the SnowCrack suite."""
         
         self._data = []
         self._hashtype = hashtype
+        self._compress = compress
         self._isSorted = False
         self._fromdts = fromDictToSnow
         
@@ -24,22 +25,19 @@ class SnowDict:
         if self._isSorted:
             raise ValueError("Dictionary is already sorted")
         
-        # Sketchy but fast duplicate removal
-        if self._isFromDict():
-            lines = set(self._data)
-            lines = [l.rstrip() for l in list(lines)]
-        else:
-            lines = self._data
+        # Duplicate removal
+        self._data = set(self._data)
+        self._data = [l.rstrip() for l in list(self._data)]
             
-        lines.sort()
+        self._data.sort()
 
         data = []
-        prev = []
         curh = ''
         curp = ''
-        end = lines[-1]
-        
-        for line in lines:
+        prev = (curh, curp)
+        end = self._data[-1]
+
+        for x,line in enumerate(self._data):
             try:
                 h,p = line.split('÷')
                 
@@ -59,17 +57,19 @@ class SnowDict:
                     
                 if line == end:
                     data.append(curh+'÷'+curp)
-                    
-                prev = [h,p]
+
+                prev = (h,p)
+                self._data[x] = ''
                 
             except ValueError:
                 pass
             
         self._data = data
+        data = []
         self._isSorted = True
         
 #-------------------
-    def addPassword(self, password, compress=False):
+    def addPassword(self, password):
         hashtype = self._hashtype
         
         if not self._isSorted:
@@ -123,12 +123,15 @@ class SnowDict:
                     phash = hashlib.sha512(password.encode('ascii')).digest()
                 except UnicodeEncodeError:
                     phash = hashlib.sha512(password.encode('utf-8')).digest()
+
                     
             # If the hash isn't ntlm length, store as md5 to decrease file size
             # and limit runtime memory usage
-            if compress and not hashtype in ["ntlm", "md4", "md5"]:
-                phash = str(binascii.hexlify(phash))[2:-1]
-                phash = hashlib.md5(phash.encode("ascii")).digest()
+            if self._compress:
+                if not hashtype in ["ntlm", "md4", "md5"]:
+                    phash = str(binascii.hexlify(phash))[2:-1]
+                    phash = hashlib.md5(phash.encode("ascii")).digest()
+
 
             # Append the hash/password combination to self._data
             self._data.append(str(binascii.hexlify(phash))[2:-1] + "÷" + password)
@@ -141,9 +144,7 @@ class SnowDict:
         if not self._isSorted:
             raise ValueError("Cannot write unsorted table")
         
-        fname = self._digestFileName(filename)
-        
-        with open(fname, 'w') as f:
+        with open(filename, 'w') as f:
         
             if self._fromdts:
                 print("fromdts", file=f)
@@ -152,7 +153,7 @@ class SnowDict:
                 print(item, file=f)
 
 #-------------------
-    def _digestFileName(self, filename):
+    def _digestFileNam(self, filename):
     #Converts file input into proper format to stop case sensitivity
 
         di = None
@@ -168,7 +169,7 @@ class SnowDict:
             directory = filename[:di]
             
         fname = filename[di:-4]
-        end = ".sgn"
+        end = ".sdct"
         rfname = ""
         norm = False
         
@@ -189,11 +190,13 @@ class SnowDict:
         return directory+fname
 
 #-------------------
+    def clearTable(self):
+        self._data = []
+        self._isSorted = False
+
+#-------------------
     def _isFromDict(self):
         if "fromdts" in self._data[0]:
             return True
         else:
             return False
-
-            
-            

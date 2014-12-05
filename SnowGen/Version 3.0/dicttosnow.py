@@ -94,7 +94,7 @@ def main():
 
     t = time.time()
     
-    fname = "{}{} dictionary.sgn".format(outdir,hashtype)
+    fname = hashType
     toSnow(hashtype, fname, directory=indir)
     
     print("Operation completed in {}".format(_toTime(time.time()-t)))

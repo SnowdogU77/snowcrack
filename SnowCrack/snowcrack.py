@@ -22,38 +22,37 @@ def crackMulti(inhash, file, directory):
     t = time.time()
     found = False
 
-    files = [directory+file] + [directory+f for f in next(os.walk(directory))[2]\
-             if (f.startswith(file[:-4])and f[-5:] == ".psgn")]
+    files = [directory+f for f in next(os.walk(directory))[2]]
+             #if (file[:-9] in f) and f[-6:] == ".psdct"]
     
     for f in files:
-        table = open(f, 'r')
-        lines = table.readlines()
-        heads = [l[:4] for l in lines]
-        
-        head = inhash[:4]
-        tail = inhash[4:]
-        pos = bisect_left(heads, head)
-        
-        try:
-            line = lines[pos]
-            hashes,passes = line.split("÷")
-            hashes = hashes.split("|")[1:]
-            passes = passes.split("¬")
-            m = hashes.index(tail)
-            pas = passes[m]
+        with open(f, 'r') as table:
+            print(table.name)
+            lines = table.readlines()
+            heads = [l[:4] for l in lines]
+            
+            head = inhash[:4]
+            tail = inhash[4:]
+            pos = bisect_left(heads, head)
+            
+            try:
+                line = lines[pos]
+                hashes,passes = line.split("÷")
+                hashes = hashes.split("|")[1:]
+                passes = passes.split("¬")
+                m = hashes.index(tail)
+                pas = passes[m]
 
-            if not pos == 0:
-                print("Success! Password is:", pas)
-                print("\nRuntime: {}".format(_toTime(time.time()-t)))
-                
-                table.close()
-                found = True
-                break
-        
-        except ValueError:
-            pass
-
-        table.close()
+                if not pos == 0:
+                    print("Success! Password is:", pas)
+                    print("\nRuntime: {}".format(_toTime(time.time()-t)))
+                    
+                    table.close()
+                    found = True
+                    break
+            
+            except ValueError:
+                pass
 
     if not found:
         print("Password not found.")
@@ -66,13 +65,13 @@ def crackSingle(inhash,file,directory):
     """crackSingle manages cracking using a single file.
     -
     inhash: hash to crack
-    file: dictionary file (.sgn)"""
+    file: dictionary file (.sdct)"""
         
     print("\nSearching...")
     t = time.time()
     table = open(directory+file, 'r')
     lines = table.readlines()
-    heads = [l[:4] for l in lines]
+    heads = [l[:5] for l in lines]
     
     table.close()
 
@@ -106,7 +105,7 @@ def _toTime(raw):
     elif t < 3600:
         return str(round(t/60,2))+" minutes"
     else:
-        return str(round(t/120,2))+ " hours"
+        return str(round((t/60)/60,2))+ " hours"
 
 ######
 def _digestFile(file):
