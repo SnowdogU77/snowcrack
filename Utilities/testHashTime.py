@@ -3,7 +3,7 @@ import binascii
 import time
 
 def main():
-    password = 'dicks'
+    password = 'password'
 
     ntlmTimes = 0.0
     md4Times = 0.0
